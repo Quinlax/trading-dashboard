@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Performance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #1c2330;
+    --border: #30363d;
+    --green: #2ea043;
+    --green-bright: #3fb950;
+    --green-glow: rgba(46,160,67,0.15);
+    --red: #da3633;
+    --red-bright: #f85149;
+    --red-glow: rgba(218,54,51,0.12);
+    --yellow: #d29922;
+    --yellow-bright: #e3b341;
+    --gold: #c9a84c;
+    --text: #e6edf3;
+    --text-muted: #7d8590;
+    --text-dim: #484f58;
+    --accent: #2ea043;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  .header-left p {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 3px;
+    letter-spacing: 0.5px;
+  }
+  .zone-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+  .zone-badge.green { background: var(--green-glow); border-color: var(--green); color: var(--green-bright); }
+  .zone-badge.yellow { background: rgba(210,153,34,0.12); border-color: var(--yellow); color: var(--yellow-bright); }
+  .zone-badge.red { background: var(--red-glow); border-color: var(--red); color: var(--red-bright); }
+  .zone-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .zone-badge.green .zone-dot { background: var(--green-bright); box-shadow: 0 0 6px var(--green-bright); }
+  .zone-badge.yellow .zone-dot { background: var(--yellow-bright); box-shadow: 0 0 6px var(--yellow-bright); }
+  .zone-badge.red .zone-dot { background: var(--red-bright); box-shadow: 0 0 6px var(--red-bright); }
+
+  /* ── GRID ── */
+  .grid-top { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .grid-mid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .grid-bot { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #444c56; }
+  .card-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .card-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .card-value.green { color: var(--green-bright); }
+  .card-value.red { color: var(--red-bright); }
+  .card-value.gold { color: var(--gold); }
+  .card-value.white { color: var(--text); }
+  .card-sub {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+  .card-glow-green::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+  }
+  .card-glow-red::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--red), transparent);
+  }
+  .card-glow-gold::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .card-glow-blue::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #58a6ff, transparent);
+  }
+
+  /* ── DONUT CHART CARD ── */
+  .donut-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+  }
+  .donut-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex: 1;
+  }
+  .donut-svg-wrap {
+    position: relative;
+    flex-shrink: 0;
+  }
+  .donut-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .donut-center-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1;
+  }
+  .donut-center-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-top: 3px;
+  }
+  .donut-legend { flex: 1; }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .legend-name { font-size: 11px; color: var(--text-muted); flex: 1; }
+  .legend-pct { font-size: 11px; color: var(--text); font-weight: 500; }
+  .legend-val { font-size: 10px; color: var(--text-dim); margin-left: 4px; }
+
+  /* ── PROGRESS BARS ── */
+  .progress-section { margin-top: 8px; }
+  .progress-row { margin-bottom: 14px; }
+  .progress-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .progress-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; }
+  .progress-value { font-size: 10px; color: var(--text); }
+  .progress-track {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .progress-fill.green { background: var(--green-bright); }
+  .progress-fill.red { background: var(--red-bright); }
+  .progress-fill.gold { background: var(--gold); }
+  .progress-fill.blue { background: #58a6ff; }
+  .progress-fill.yellow { background: var(--yellow-bright); }
+
+  /* ── WIN/LOSS BAR ── */
+  .wl-bar-wrap { margin: 12px 0 6px; }
+  .wl-bar {
+    height: 8px;
+    border-radius: 4px;
+    display: flex;
+    overflow: hidden;
+    gap: 2px;
+  }
+  .wl-seg {
+    height: 100%;
+    border-radius: 3px;
+    transition: flex 0.8s cubic-bezier(0.4,0,0.2,1);
+  }
+  .wl-labels { display: flex; justify-content: space-between; margin-top: 6px; }
+  .wl-label { font-size: 10px; color: var(--text-muted); }
+  .wl-label span { color: var(--text); }
+
+  /* ── MINI BARS CHART ── */
+  .bars-chart { display: flex; align-items: flex-end; gap: 6px; height: 70px; margin: 12px 0 8px; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .bar {
+    width: 100%;
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    transition: height 0.8s cubic-bezier(0.4,0,0.2,1);
+    cursor: pointer;
+    position: relative;
+  }
+  .bar.pos { background: var(--green); }
+  .bar.neg { background: var(--red); border-radius: 0 0 3px 3px; align-self: flex-start; }
+  .bar-label { font-size: 9px; color: var(--text-dim); }
+
+  /* ── STREAK ── */
+  .streak-dots { display: flex; gap: 4px; flex-wrap: wrap; margin: 10px 0; }
+  .streak-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    transition: transform 0.15s;
+  }
+  .streak-dot:hover { transform: scale(1.3); }
+  .streak-dot.w { background: var(--green-bright); }
+  .streak-dot.l { background: var(--red-bright); }
+  .streak-dot.e { background: var(--yellow-bright); }
+  .streak-dot.empty { background: var(--surface2); border: 1px solid var(--border); }
+
+  /* ── PROP FIRM STATUS ── */
+  .prop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .prop-stat { text-align: center; }
+  .prop-stat-val {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .prop-stat-label { font-size: 9px; color: var(--text-muted); margin-top: 2px; letter-spacing: 0.5px; }
+
+  /* ── EDIT MODE ── */
+  .edit-btn {
+    position: fixed;
+    bottom: 20px; right: 20px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    z-index: 100;
+    transition: background 0.2s;
+  }
+  .edit-btn:hover { background: var(--green-bright); }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .modal h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .field-group { margin-bottom: 16px; }
+  .field-label { font-size: 10px; color: var(--text-muted); letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+  .field-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field-input:focus { border-color: var(--green); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .btn-save {
+    flex: 1;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-save:hover { background: var(--green-bright); }
+  .btn-cancel {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  .divider { width: 100%; height: 1px; background: var(--border); margin: 16px 0; }
+  .section-title {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  /* trade history inputs */
+  .trade-row-input { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .trade-row-input select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    cursor: pointer;
+  }
+  .trade-row-input input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    outline: none;
+    width: 90px;
+  }
+  .trade-row-input input:focus,
+  .trade-row-input select:focus { border-color: var(--green); }
+  .remove-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .remove-btn:hover { color: var(--red-bright); background: var(--red-glow); }
+  .add-trade-btn {
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 6px 12px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+  }
+  .add-trade-btn:hover { border-color: var(--green); color: var(--green-bright); }
+
+  .fade-in { animation: fadeIn 0.4s ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header fade-in">
+  <div class="header-left">
+    <h1>TRADING DASHBOARD</h1>
+    <p id="header-sub">Avaz · Topstep & Lucid · $50K · MNQ · MGC · ES</p>
+  </div>
+  <div id="zone-badge" class="zone-badge green">
+    <div class="zone-dot"></div>
+    <span id="zone-text">🟢 GREEN ZONE</span>
+  </div>
+</div>
+
+<!-- TOP ROW: 4 KPI CARDS -->
+<div class="grid-top fade-in">
+  <div class="card card-glow-green">
+    <div class="card-label">NET P&L</div>
+    <div class="card-value green" id="kpi-pnl">$0</div>
+    <div class="card-sub" id="kpi-pnl-sub">0 trades logged</div>
+  </div>
+  <div class="card card-glow-blue">
+    <div class="card-label">WIN RATE</div>
+    <div class="card-value white" id="kpi-wr">0%</div>
+    <div class="card-sub" id="kpi-wr-sub">0W · 0L</div>
+  </div>
+  <div class="card card-glow-gold">
+    <div class="card-label">EXIT DISCIPLINE</div>
+    <div class="card-value gold" id="kpi-disc">0%</div>
+    <div class="card-sub" id="kpi-disc-sub">held to SL/TP</div>
+  </div>
+  <div class="card card-glow-red">
+    <div class="card-label">LEFT ON TABLE</div>
+    <div class="card-value red" id="kpi-lot">$0</div>
+    <div class="card-sub">cost of early exits</div>
+  </div>
+</div>
+
+<!-- MID ROW -->
+<div class="grid-mid fade-in">
+
+  <!-- DONUT: Outcome Breakdown -->
+  <div class="donut-card">
+    <div class="card-label">OUTCOME BREAKDOWN</div>
+    <div class="donut-wrapper">
+      <div class="donut-svg-wrap">
+        <svg id="donut-svg" width="130" height="130" viewBox="0 0 130 130">
+          <circle cx="65" cy="65" r="50" fill="none" stroke="#1c2330" stroke-width="18"/>
+          <circle id="d-tp" cx="65" cy="65" r="50" fill="none" stroke="#2ea043" stroke-width="18"
+            stroke-dasharray="0 314" stroke-dashoffset="0" stroke-linecap="round"
+            style="transition:stroke-dasharray 1s ease;transform:rotate(-90deg);transform-origin:65px 65px"/>
+          <circle id="d-sl" cx="65" cy="65" r="50" fill="none" stroke="#da3633" stroke-width="18"
+            stroke-dasharray="0 314" stroke-dashoffset="0" stroke-linecap="round"
+            style="transition:stroke-dasharray 1s ease,stroke-dashoffset 1s ease;transform:rotate(-90deg);transform-origin:65px 65px"/>
+          <circle id="d-ee" cx="65" cy="65" r="50" fill="none" stroke="#d29922" stroke-width="18"
+            stroke-dasharray="0 314" stroke-dashoffset="0" stroke-linecap="round"
+            style="transition:stroke-dasharray 1s ease,stroke-dashoffset 1s ease;transform:rotate(-90deg);transform-origin:65px 65px"/>
+        </svg>
+        <div class="donut-center">
+          <div class="donut-center-value" id="donut-center-val">—</div>
+          <div class="donut-center-label">TRADES</div>
+        </div>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#3fb950"></div>
+          <div class="legend-name">TP HIT</div>
+          <div class="legend-pct" id="leg-tp">0%</div>
+          <div class="legend-val" id="leg-tp-n">(0)</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#f85149"></div>
+          <div class="legend-name">SL HIT</div>
+          <div class="legend-pct" id="leg-sl">0%</div>
+          <div class="legend-val" id="leg-sl-n">(0)</div>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#e3b341"></div>
+          <div class="legend-name">EARLY EXIT</div>
+          <div class="legend-pct" id="leg-ee">0%</div>
+          <div class="legend-val" id="leg-ee-n">(0)</div>
+        </div>
+        <div class="divider" style="margin:8px 0"></div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#c9a84c"></div>
+          <div class="legend-name">PROFIT FACTOR</div>
+          <div class="legend-pct" id="leg-pf">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROP FIRM STATUS -->
+  <div class="card">
+    <div class="card-label">PROP FIRM STATUS</div>
+    <div class="progress-section">
+      <div class="progress-row">
+        <div class="progress-header">
+          <span class="progress-label">PAYOUT PROGRESS</span>
+          <span class="progress-value" id="payout-val">$0 / $3,000</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill green" id="payout-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-header">
+          <span class="progress-label">DRAWDOWN USED</span>
+          <span class="progress-value" id="dd-val">$0 / $2,000</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill red" id="dd-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-header">
+          <span class="progress-label">DAILY STOP USED</span>
+          <span class="progress-value" id="ds-val">$0</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill yellow" id="ds-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="prop-grid">
+      <div class="prop-stat">
+        <div class="prop-stat-val green" id="prop-zone">GREEN</div>
+        <div class="prop-stat-label">CURRENT ZONE</div>
+      </div>
+      <div class="prop-stat">
+        <div class="prop-stat-val white" id="prop-days">0</div>
+        <div class="prop-stat-label">DAYS CLEAN</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WIN/LOSS + STREAK -->
+  <div class="card">
+    <div class="card-label">WIN / LOSS SPLIT</div>
+    <div class="wl-bar-wrap">
+      <div class="wl-bar">
+        <div class="wl-seg" id="wl-win" style="flex:0;background:var(--green)"></div>
+        <div class="wl-seg" id="wl-ee" style="flex:0;background:var(--yellow)"></div>
+        <div class="wl-seg" id="wl-loss" style="flex:0;background:var(--red)"></div>
+      </div>
+      <div class="wl-labels">
+        <div class="wl-label">WINS <span id="wl-w-n">0</span></div>
+        <div class="wl-label">EARLY <span id="wl-e-n">0</span></div>
+        <div class="wl-label">LOSSES <span id="wl-l-n">0</span></div>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="section-title">RECENT TRADE STREAK</div>
+    <div class="streak-dots" id="streak-dots"></div>
+    <div style="font-size:9px;color:var(--text-dim);margin-top:4px">
+      🟢 TP HIT &nbsp;&nbsp; 🔴 SL HIT &nbsp;&nbsp; 🟡 EARLY EXIT
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM ROW -->
+<div class="grid-bot fade-in">
+  <!-- SESSION P&L BARS -->
+  <div class="card">
+    <div class="card-label">SESSION P&L HISTORY</div>
+    <div class="bars-chart" id="bars-chart"></div>
+    <div style="font-size:9px;color:var(--text-dim);text-align:center">last sessions logged</div>
+  </div>
+
+  <!-- DISCIPLINE METRICS -->
+  <div class="card">
+    <div class="card-label">DISCIPLINE METRICS</div>
+    <div class="progress-section" style="margin-top:4px">
+      <div class="progress-row">
+        <div class="progress-header">
+          <span class="progress-label">RITUAL COMPLETION</span>
+          <span class="progress-value" id="disc-ritual">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill green" id="disc-ritual-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-header">
+          <span class="progress-label">RULES FOLLOWED</span>
+          <span class="progress-value" id="disc-rules">0%</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill blue" id="disc-rules-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-header">
+          <span class="progress-label">5-MIN RULE USED</span>
+          <span class="progress-value" id="disc-5min">0 times</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill gold" id="disc-5min-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-header">
+          <span class="progress-label">AVG EMOTIONAL SCORE</span>
+          <span class="progress-value" id="disc-emo">—</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill gold" id="disc-emo-bar" style="width:0%"></div>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div class="progress-header">
+          <span class="progress-label">INSTRUMENT SPLIT</span>
+          <span class="progress-value" id="disc-inst">—</span>
+        </div>
+        <div class="progress-track" style="display:flex;gap:2px;overflow:hidden">
+          <div class="progress-fill green" id="inst-mnq" style="width:0%;border-radius:2px"></div>
+          <div class="progress-fill gold" id="inst-mgc" style="width:0%;border-radius:2px"></div>
+          <div class="progress-fill blue" id="inst-es" style="width:0%;border-radius:2px;background:#58a6ff"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT BUTTON -->
+<button class="edit-btn" onclick="openModal()">✏️ Update Stats</button>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2>Update Dashboard</h2>
+
+    <div class="section-title">PROP FIRM STATUS</div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">CURRENT P&L ($)</label>
+        <input class="field-input" id="f-pnl" type="number" placeholder="0" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">DRAWDOWN USED ($)</label>
+        <input class="field-input" id="f-dd" type="number" placeholder="0" />
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">DAILY STOP USED ($)</label>
+        <input class="field-input" id="f-ds" type="number" placeholder="0" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">DAILY STOP LIMIT ($)</label>
+        <input class="field-input" id="f-dslimit" type="number" placeholder="400" />
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">DAYS CLEAN (no violations)</label>
+        <input class="field-input" id="f-days" type="number" placeholder="0" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">LEFT ON TABLE ($)</label>
+        <input class="field-input" id="f-lot" type="number" placeholder="0" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-title">DISCIPLINE</div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">RITUAL COMPLETION (%)</label>
+        <input class="field-input" id="f-ritual" type="number" placeholder="100" min="0" max="100" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">RULES FOLLOWED (%)</label>
+        <input class="field-input" id="f-rules" type="number" placeholder="100" min="0" max="100" />
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field-group">
+        <label class="field-label">5-MIN RULE USED (times)</label>
+        <input class="field-input" id="f-5min" type="number" placeholder="0" />
+      </div>
+      <div class="field-group">
+        <label class="field-label">AVG EMOTIONAL SCORE (1-10)</label>
+        <input class="field-input" id="f-emo" type="number" placeholder="7" min="1" max="10" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-title">TRADE HISTORY (outcome per session)</div>
+    <div id="trade-rows"></div>
+    <button class="add-trade-btn" onclick="addTradeRow()">+ Add session</button>
+
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveData()">Save & Update Dashboard</button>
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────────────────
+let state = {
+  pnl: 0, dd: 0, ds: 0, dsLimit: 400, days: 0, lot: 0,
+  ritual: 0, rules: 0, fiveMin: 0, emo: 0,
+  trades: [] // {type: 'tp'|'sl'|'ee', pnl: number, inst: 'MNQ'|'MGC'|'ES'}
+};
+
+// Load from localStorage if available
+try {
+  const saved = localStorage.getItem('trading_dash_v1');
+  if (saved) state = JSON.parse(saved);
+} catch(e) {}
+
+function save() {
+  try { localStorage.setItem('trading_dash_v1', JSON.stringify(state)); } catch(e) {}
+}
+
+// ── COMPUTE ────────────────────────────────────────────────────────────────
+function compute() {
+  const t = state.trades;
+  const total = t.length;
+  const tp = t.filter(x => x.type === 'tp').length;
+  const sl = t.filter(x => x.type === 'sl').length;
+  const ee = t.filter(x => x.type === 'ee').length;
+  const wins = tp;
+  const wr = total ? Math.round(wins / total * 100) : 0;
+  const disc = total ? Math.round((tp + sl) / total * 100) : 0;
+  const totalPnl = state.pnl;
+  const mnq = t.filter(x => x.inst === 'MNQ').length;
+  const mgc = t.filter(x => x.inst === 'MGC').length;
+  const es  = t.filter(x => x.inst === 'ES').length;
+  const grossWin = t.filter(x => x.type==='tp').reduce((a,b) => a + (b.pnl||515), 0);
+  const grossLoss = Math.abs(t.filter(x => x.type!=='tp').reduce((a,b) => a + (b.pnl||0), 0));
+  const pf = grossLoss > 0 ? (grossWin / grossLoss).toFixed(2) : '∞';
+
+  // Zone
+  const p = totalPnl;
+  let zone = 'green';
+  if (p >= 2400) zone = 'red';
+  else if (p >= 1500) zone = 'yellow';
+
+  return { total, tp, sl, ee, wins, wr, disc, totalPnl, mnq, mgc, es, pf, zone, grossWin, grossLoss };
+}
+
+// ── RENDER ──────────────────────────────────────────────────────────────────
+function render() {
+  const c = compute();
+  const circ = 2 * Math.PI * 50; // ≈314
+
+  // KPI cards
+  const pnlEl = document.getElementById('kpi-pnl');
+  pnlEl.textContent = fmt(state.pnl);
+  pnlEl.className = 'card-value ' + (state.pnl >= 0 ? 'green' : 'red');
+  document.getElementById('kpi-pnl-sub').textContent = c.total + ' trades logged';
+  document.getElementById('kpi-wr').textContent = c.wr + '%';
+  document.getElementById('kpi-wr-sub').textContent = c.wins + 'W · ' + (c.sl + c.ee) + 'L';
+  document.getElementById('kpi-disc').textContent = c.disc + '%';
+  document.getElementById('kpi-lot').textContent = fmt(state.lot);
+
+  // Donut
+  document.getElementById('donut-center-val').textContent = c.total || '—';
+  const tpPct = c.total ? c.tp / c.total : 0;
+  const slPct = c.total ? c.sl / c.total : 0;
+  const eePct = c.total ? c.ee / c.total : 0;
+  const tpArc = tpPct * circ;
+  const slArc = slPct * circ;
+  const eeArc = eePct * circ;
+  const gap = c.total ? 4 : 0;
+  document.getElementById('d-tp').setAttribute('stroke-dasharray', tpArc + ' ' + (circ - tpArc));
+  document.getElementById('d-tp').setAttribute('stroke-dashoffset', 0);
+  const slOff = -(tpArc + gap);
+  document.getElementById('d-sl').setAttribute('stroke-dasharray', slArc + ' ' + (circ - slArc));
+  document.getElementById('d-sl').setAttribute('stroke-dashoffset', slOff);
+  const eeOff = -(tpArc + slArc + gap * 2);
+  document.getElementById('d-ee').setAttribute('stroke-dasharray', eeArc + ' ' + (circ - eeArc));
+  document.getElementById('d-ee').setAttribute('stroke-dashoffset', eeOff);
+
+  document.getElementById('leg-tp').textContent = c.total ? Math.round(tpPct*100) + '%' : '0%';
+  document.getElementById('leg-tp-n').textContent = '(' + c.tp + ')';
+  document.getElementById('leg-sl').textContent = c.total ? Math.round(slPct*100) + '%' : '0%';
+  document.getElementById('leg-sl-n').textContent = '(' + c.sl + ')';
+  document.getElementById('leg-ee').textContent = c.total ? Math.round(eePct*100) + '%' : '0%';
+  document.getElementById('leg-ee-n').textContent = '(' + c.ee + ')';
+  document.getElementById('leg-pf').textContent = c.pf;
+
+  // Prop firm
+  const payPct = Math.min(state.pnl / 3000 * 100, 100);
+  const ddPct  = Math.min(state.dd / 2000 * 100, 100);
+  const dsPct  = Math.min(state.ds / (state.dsLimit||400) * 100, 100);
+  document.getElementById('payout-val').textContent = '$' + Math.max(0,state.pnl) + ' / $3,000';
+  document.getElementById('payout-bar').style.width = Math.max(0,payPct) + '%';
+  document.getElementById('dd-val').textContent = '$' + state.dd + ' / $2,000';
+  document.getElementById('dd-bar').style.width = ddPct + '%';
+  document.getElementById('dd-bar').style.background = ddPct > 75 ? 'var(--red-bright)' : 'var(--red)';
+  document.getElementById('ds-val').textContent = '$' + state.ds + ' / $' + (state.dsLimit||400);
+  document.getElementById('ds-bar').style.width = dsPct + '%';
+
+  const zoneLabels = { green: '🟢 GREEN', yellow: '🟡 YELLOW', red: '🔴 RED' };
+  document.getElementById('prop-zone').textContent = zoneLabels[c.zone].split(' ')[1];
+  document.getElementById('prop-zone').className = 'prop-stat-val ' + c.zone;
+  document.getElementById('prop-days').textContent = state.days;
+
+  // Zone badge
+  const badge = document.getElementById('zone-badge');
+  badge.className = 'zone-badge ' + c.zone;
+  document.getElementById('zone-text').textContent = zoneLabels[c.zone];
+
+  // WL bar
+  const wls = c.tp + c.sl + c.ee || 1;
+  document.getElementById('wl-win').style.flex = c.tp / wls;
+  document.getElementById('wl-ee').style.flex = c.ee / wls;
+  document.getElementById('wl-loss').style.flex = c.sl / wls;
+  document.getElementById('wl-w-n').textContent = c.tp;
+  document.getElementById('wl-e-n').textContent = c.ee;
+  document.getElementById('wl-l-n').textContent = c.sl;
+
+  // Streak dots
+  const dot = document.getElementById('streak-dots');
+  dot.innerHTML = '';
+  const recent = state.trades.slice(-20);
+  const colours = { tp: 'w', sl: 'l', ee: 'e' };
+  for (let i = 0; i < 20; i++) {
+    const d = document.createElement('div');
+    d.className = 'streak-dot ' + (recent[i] ? colours[recent[i].type] : 'empty');
+    dot.appendChild(d);
+  }
+
+  // Bars chart
+  const bars = document.getElementById('bars-chart');
+  bars.innerHTML = '';
+  const sessions = state.trades.slice(-12);
+  const maxAbs = Math.max(...sessions.map(t => Math.abs(t.pnl || 0)), 1);
+  sessions.forEach(t => {
+    const p = t.pnl || 0;
+    const wrap = document.createElement('div');
+    wrap.className = 'bar-wrap';
+    const b = document.createElement('div');
+    const pct = Math.round(Math.abs(p) / maxAbs * 60);
+    b.className = 'bar ' + (p >= 0 ? 'pos' : 'neg');
+    b.style.height = pct + 'px';
+    b.title = fmt(p);
+    wrap.appendChild(b);
+    bars.appendChild(wrap);
+  });
+
+  // Discipline
+  document.getElementById('disc-ritual').textContent = state.ritual + '%';
+  document.getElementById('disc-ritual-bar').style.width = state.ritual + '%';
+  document.getElementById('disc-rules').textContent = state.rules + '%';
+  document.getElementById('disc-rules-bar').style.width = state.rules + '%';
+  document.getElementById('disc-5min').textContent = state.fiveMin + ' times';
+  document.getElementById('disc-5min-bar').style.width = Math.min(state.fiveMin * 10, 100) + '%';
+  if (state.emo) {
+    document.getElementById('disc-emo').textContent = state.emo + ' / 10';
+    document.getElementById('disc-emo-bar').style.width = (state.emo / 10 * 100) + '%';
+  }
+  // Instrument split
+  const instTotal = c.mnq + c.mgc + c.es || 1;
+  document.getElementById('inst-mnq').style.width = (c.mnq/instTotal*100) + '%';
+  document.getElementById('inst-mgc').style.width = (c.mgc/instTotal*100) + '%';
+  document.getElementById('inst-es').style.width  = (c.es/instTotal*100)  + '%';
+  document.getElementById('disc-inst').textContent =
+    'MNQ ' + c.mnq + ' · MGC ' + c.mgc + ' · ES ' + c.es;
+}
+
+function fmt(n) {
+  const abs = Math.abs(n);
+  return (n < 0 ? '-' : '') + '$' + abs.toLocaleString();
+}
+
+// ── MODAL ──────────────────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('f-pnl').value = state.pnl;
+  document.getElementById('f-dd').value  = state.dd;
+  document.getElementById('f-ds').value  = state.ds;
+  document.getElementById('f-dslimit').value = state.dsLimit;
+  document.getElementById('f-days').value = state.days;
+  document.getElementById('f-lot').value  = state.lot;
+  document.getElementById('f-ritual').value = state.ritual;
+  document.getElementById('f-rules').value  = state.rules;
+  document.getElementById('f-5min').value   = state.fiveMin;
+  document.getElementById('f-emo').value    = state.emo;
+
+  const rows = document.getElementById('trade-rows');
+  rows.innerHTML = '';
+  state.trades.forEach((t, i) => addTradeRow(t));
+
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+function addTradeRow(t) {
+  const rows = document.getElementById('trade-rows');
+  const div = document.createElement('div');
+  div.className = 'trade-row-input';
+  div.innerHTML = `
+    <select class="t-type">
+      <option value="tp" ${t&&t.type==='tp'?'selected':''}>TP Hit</option>
+      <option value="sl" ${t&&t.type==='sl'?'selected':''}>SL Hit</option>
+      <option value="ee" ${t&&t.type==='ee'?'selected':''}>Early Exit</option>
+    </select>
+    <select class="t-inst">
+      <option value="MNQ" ${t&&t.inst==='MNQ'?'selected':''}>MNQ</option>
+      <option value="MGC" ${t&&t.inst==='MGC'?'selected':''}>MGC</option>
+      <option value="ES"  ${t&&t.inst==='ES'?'selected':''}>ES</option>
+    </select>
+    <input class="t-pnl" type="number" placeholder="P&L $" value="${t?t.pnl:''}" />
+    <button class="remove-btn" onclick="this.parentElement.remove()">✕</button>
+  `;
+  rows.appendChild(div);
+}
+
+function saveData() {
+  state.pnl    = parseFloat(document.getElementById('f-pnl').value) || 0;
+  state.dd     = parseFloat(document.getElementById('f-dd').value)  || 0;
+  state.ds     = parseFloat(document.getElementById('f-ds').value)  || 0;
+  state.dsLimit= parseFloat(document.getElementById('f-dslimit').value) || 400;
+  state.days   = parseInt(document.getElementById('f-days').value)  || 0;
+  state.lot    = parseFloat(document.getElementById('f-lot').value) || 0;
+  state.ritual = parseFloat(document.getElementById('f-ritual').value) || 0;
+  state.rules  = parseFloat(document.getElementById('f-rules').value)  || 0;
+  state.fiveMin= parseInt(document.getElementById('f-5min').value)   || 0;
+  state.emo    = parseFloat(document.getElementById('f-emo').value)  || 0;
+
+  const rows = document.querySelectorAll('.trade-row-input');
+  state.trades = Array.from(rows).map(r => ({
+    type: r.querySelector('.t-type').value,
+    inst: r.querySelector('.t-inst').value,
+    pnl:  parseFloat(r.querySelector('.t-pnl').value) || 0
+  }));
+
+  save();
+  render();
+  closeModal();
+}
+
+// Close modal on overlay click
+document.getElementById('modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Init
+render();
+</script>
+</body>
+</html>
